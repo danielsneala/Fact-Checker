@@ -1,0 +1,389 @@
+---
+title: "Social Media Fact Check"
+author: "Neal Daniels"
+date: "January 11, 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE}
+
+```
+
+
+When it comes to the news, we'd prefer to have sources that we like. Maybe its the type of stories that they share or the political opinion of the news source. Still, we like it best when they tell us the truth. That instead of telling us it'll be a warm sunny day during January in Alaska, they tell us the truth. Unfortunately, there was has been some controversy over news, particularly over recent election details,response to natural disasters, pandemic issues, among many other aspects.  
+
+So, how do we narrow it down as to when truth is being spoken by news media?
+
+Using some data obtained in 2016 and posted on [Github](https://www.kaggle.com/mrisdal/fact-checking-facebook-politics-pages), we will try to identify certain factors that can help us decipher true news from "fake news". 
+
+
+
+
+
+```{r}
+library(tidyverse)
+library(haven)
+library(ggplot2)
+library(readr)
+library(stringi)
+library(stringr)
+library(knitr)
+library(tinytex)
+
+facebook <- read_csv("~/Facebook Fact Checker/facebook-fact-check.csv") %>%
+#facebook <- read_csv("facebook-fact-check.csv") %>%
+  mutate(Debate = case_when(
+    str_detect(Debate, "yes") ~ "yes",
+    T ~ "no"
+  ), Reaction_Counter = case_when(
+    reaction_count <= 475 ~ "475 and less",
+    reaction_count > 475  & reaction_count <= 1000 ~ "475- 1000",
+    reaction_count >1000 & reaction_count >= 2000 ~ "1001 - 2000",
+    reaction_count >2000 & reaction_count >= 3000 ~ "2001 - 3000",
+    reaction_count > 3000 & reaction_count >= 4000 ~ "3001 - 4000",
+    reaction_count > 4000 & reaction_count >= 5000 ~ "4001 - 5000",
+    reaction_count > 5000 & reaction_count >= 6000 ~ "5001 - 6000",
+    reaction_count > 6000 & reaction_count >= 7000 ~ "6001 - 7000",
+    reaction_count > 7000 & reaction_count >= 8000 ~ "7001 - 8000",
+    reaction_count > 8000 & reaction_count >= 9000 ~ "8001 - 9000",
+    reaction_count > 9000 & reaction_count >= 10000 ~ "9001 - 10k",
+    reaction_count > 10000 ~ "10k +",
+    T ~ "475 and less"
+  ))
+
+library(mosaic)
+library(DT)
+library(pander)
+library(plotly)
+
+datatable(facebook, extensions="Responsive", options=list(lengthMenu=c(3,5,10)))
+
+```
+
+# Break the data apart. 
+
+Now there's many different factors that could help us determine which ones are of interest. What I did was first looked at the count of truth ratings in each category (left, right, and mainstream).
+
+
+```{r}
+# Falsehoods/ Truth  <- Rating
+
+# x - Category
+# y - 
+# fill- Rating
+
+Cat_Rate <- facebook %>%
+  group_by(Category, Rating) %>%
+  summarize(Truth_Count = n()) %>%
+  ungroup() 
+
+ Cat_Rate_2 <- Cat_Rate %>%
+  ggplot() +
+  geom_col(aes(x = Category, y = Truth_Count , fill = Rating, title = "Truthfulness in the News Categories"))
+   
+
+Cat_Rate_2
+# Mainstream mostly true, Category
+```
+
+From the graph, we see that most true news is found in the main news, while a high concentrate of false news was from the right. However, we cannot simply identify that false news always come from opinionated news sources because it may have been due to political motivation to cover or expose issues. 
+
+We next look at news sources.
+
+
+```{r}
+# x = Category
+# y = 
+# fill = Rating
+
+Page_Rate <- facebook %>%
+  group_by(Page, Rating) %>%
+  summarise(Truth_Count = n()) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x= Page, y= Truth_Count, fill = Rating)) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 270, hjust = 1, vjust = 0.5))
+
+Page_Rate
+```
+From this, we see that most true news has come from Politico, CNN Politics, and ABC News Politics, with the first two producing the largest amount. However, we have to keep in mind that CNN is known to be an opinionated source, so we can not consider it heavily reliable. Next we'll look at the post types of the news, so see if there's a correlation of truthfulness between the type of post made. 
+
+
+```{r}
+Post_Rate <- facebook %>%
+  group_by(`Post Type`, Rating) %>%
+  summarise(Truth_Count = n()) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x= `Post Type`, y= Truth_Count, fill = Rating)) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 270, hjust = 1, vjust = 0.5))
+
+
+Post_Rate
+```
+
+From this graph, we see that many truthfully sources came in the form of a link.However, there's also a larger proportion of this post type that is false than in our other post types. One of the last factors we'll look at is whether the news published sparks a debate.
+
+
+```{r}
+Debate_Rate <- facebook %>%
+  group_by(Debate, Rating) %>%
+  summarise(Truth_Count = n()) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x= Debate, y= Truth_Count, fill = Rating)) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 270, hjust = 1, vjust = 0.5))
+  
+Debate_Rate
+
+# larger proportion of truth in "yes"
+```
+
+#This graph shows that a majority of news that didn't spark a debate is true. While some news that sparked debate is true, the proprtion of 
+
+
+```{r}
+React_Rate <- facebook %>%
+  group_by(Reaction_Counter, Rating) %>%
+  summarise(Truth_Count = n()) %>%
+  ungroup() %>%
+  ggplot() +
+  geom_col(aes(x= Reaction_Counter, y= Truth_Count, fill = Rating)) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 270, hjust = 1, vjust = 0.5))
+
+React_Rate
+
+#table(facebook$reaction_count, facebook$comment_count)
+
+```
+
+From this we see that any time when the reaction count is 475 or less, the news is most likely true. But we need to see if there's any correlation going on, besides just coincidentally findings.
+So we look at Linear Regression. 
+
+
+# Regression Test
+Linear Regression helps in seeing if there's any linear relationship between truth and the other factors.
+
+In order to see if any of these factors are of interest, we'll look at the the pairs plot. Its a series of chart formed, looking at all the factors we specify. In this case, we're looking at the  Rating variable (which specifies news material as mostly true, mostly false, etc.) and how its affected by other factors. 
+
+```{r}
+# Category, Page, Post Type, Rating, Debate-- Change to numbers
+Line_Tester <- facebook %>%
+  mutate(Category = case_when(
+    str_detect(Category, "left") ~ 3,
+    str_detect(Category, "right") ~ 100,
+    str_detect(Category, "mainstream") ~ 50
+  ), Page = case_when(
+    str_detect(Page, "ABC") ~ 5, 
+    str_detect(Page, "Addicting") ~ 7,
+    str_detect(Page, "CNN") ~ 9,
+    str_detect(Page, "Eagle")~ 30,
+    str_detect(Page, "Freedom") ~ 10,
+    str_detect(Page, "Occupy") ~ 20,
+    str_detect(Page, "Politico") ~ 15,
+    str_detect(Page, "Right") ~ 40,
+    str_detect(Page, "Other") ~ 21
+  ),"Post Type" = case_when(
+    str_detect(`Post Type`, "link") ~ 4,
+    str_detect(`Post Type`, "photo") ~ 5,
+    str_detect(`Post Type`, "text") ~ 6,
+    str_detect(`Post Type`, "video") ~ 7
+  ), Rating = case_when(
+    str_detect(Rating, "and") ~ 15,
+    str_detect(Rating, "mostly false")~ 10,
+    str_detect(Rating, "mostly true") ~ 12,
+    str_detect(Rating, "no") ~ 11
+  ), Debate = case_when(
+    str_detect(Debate, "yes") ~ 5,
+    T ~ 3
+  ))
+
+
+
+pairs(Line_Tester[, c(8, 3, 4,7, 9, 11,12)], panel= panel.smooth)
+
+```
+
+
+Initially, the chart above doesn't make sense, unless you know what to look for. In our case, we're looking at the first row, where "Rating" is on the y-axis and the other variables are on the x-axis. In each chart, we try to see if there's a trend displayed by the red lines in the graphs. 
+Unfortunately, based on what we see, there isn't strong increasing or decreasing trend occurring, so we try something else.    
+
+
+# Chi-Squared Test
+
+Chi-Squared Test helps us see if there's an association between two factors. Now, in the Linear Regression test, we looked at multiple factors to study whether there was a correlation and we didn't have a limit on which factors we could look at. 
+
+However, when it comes to looking for correlations using the Chi-squared test, the two factors must satisfy one of the two requirements. One requirement is that *all* expected count is to be 5 or greater. The other requirement is that *all* expected counts are at least one and the average of the expected counts is at least 5. 
+
+This means that any instances when we have a zero when we do a table comparing two factors, we cannot use the Chi-Squared test. This means that we can't use a majority of the factors but we can look at the Debate factor. 
+
+```{r, echo=FALSE}
+
+Social <- facebook %>%
+  group_by(Category, Rating) %>%
+  mutate(Cat_Truth = n()) %>%
+  ungroup() %>%
+  group_by(Page, Rating) %>%
+  mutate(Page_Truth = n()) %>%
+  ungroup() %>%
+  group_by(`Post Type`, Rating) %>%
+  mutate(Post_Type_Truth = n()) %>%
+  ungroup() %>%
+  group_by(Debate, Rating) %>%
+  mutate(Debate_Truth = n()) %>%
+  ungroup() %>%
+  group_by(Reaction_Counter, Rating) %>%
+  mutate(Reaction_Truth = n()) %>%
+  ungroup() %>%
+  mutate(Rating = as.factor(Rating), Rating = fct_relevel(Rating, c("no factual content","mostly false","mixture of true and false", "mostly true")))
+  
+
+
+
+ChiDebate <- table(Social$Debate, Social$Rating)
+
+pander(ChiDebate)
+
+#Chi.2Debate <- chisq.test(ChiDebate)
+
+#pander(Chi.2Debate$residuals)
+
+```
+
+
+This table satisfies the requirement that all the expected count is 5 or greater. Thus we can preform Chi-Squared test, once we establish the null and alternative hypothesis. We do this to help us judge what the calculated p-value means.
+
+
+
+$$
+H_0: \text{Instances of sparked debate and the truth rating are independent}
+$$
+
+$$
+H_a: \text{Instances of sparked debate and the truth rating are associated}
+$$
+
+```{r, echo=FALSE}
+
+#Social <- facebook %>%
+ # group_by(Category, Rating) %>%
+#  mutate(Cat_Truth = n()) %>%
+#  ungroup() %>%
+ # group_by(Page, Rating) %>%
+ # mutate(Page_Truth = n()) %>%
+#  ungroup() %>%
+ # group_by(`Post Type`, Rating) %>%
+#  mutate(Post_Type_Truth = n()) %>%
+#  ungroup() %>%
+ # group_by(Debate, Rating) %>%
+#  mutate(Debate_Truth = n()) %>%
+#  ungroup() %>%
+#  group_by(Reaction_Counter, Rating) %>%
+#  mutate(Reaction_Truth = n()) %>%
+#  ungroup() %>%
+#  mutate(Rating = as.factor(Rating), Rating = fct_relevel(Rating, c("no factual content","mostly false","mixture of true and false", "mostly true")))
+  
+# mutate(INCIDENT_YEAR = as.factor(INCIDENT_YEAR),
+         #PHASE_OF_FLT = fct_relevel(PHASE_OF_FLT, c("Local", "Taxi", "Take-off", "Departure","Climb", "Descent", "Approach", "Landing","Arrival", "Unknown", "NA")))  
+
+library(pander)
+
+#Chi.Cat <- table(Social$Category, Social$Rating)
+
+#Has a zero
+#table(Social$Category, Social$Rating)
+
+#pander(chisq.test(table(Social$Category, Social$Rating)))
+
+
+#table(Social$Page, Social$Rating)
+
+# Has a zero
+#pander(chisq.test(table(Social$Page, Social$Rating)))
+
+# Has a zero
+#table(Social$`Post Type`, Social$Rating)
+
+# Has a zero
+#pander(chisq.test(table(Social$`Post Type`, Social$Rating)))
+
+# Debate Works
+#pander(table(Social$Debate, Social$Rating))
+
+#pander(chisq.test(table(Social$Debate, Social$Rating)))
+
+#table(Social$reaction_count, Social$Rating)
+
+#pander(chisq.test(table(Social$reaction_count, Social$Rating)))
+
+# Nope
+#table(Social$comment_count, Social$Rating)
+
+
+```
+
+
+```{r, echo=FALSE}
+
+pander(chisq.test(table(Social$Debate, Social$Rating)))
+
+```
+
+
+From this calculated Chi-Squared test, we see that the p-value is significant, meaning that our alternative hypothesis, that instances of sparked debate and the truth rating are associated, is statistically true. 
+
+We look at a chart and notice that a pattern is occurring. 
+
+```{r, echo=FALSE}
+ChiDebate <- table(Social$Debate, Social$Rating)
+
+#ChiDebate <- ChiDebate[2:1,]
+
+barplot(ChiDebate, beside = TRUE, legend.text = TRUE, args.legend = list(x = "topleft", bty= "n"), xlab = "Truthfulness Rating", ylab = "Sparked a Debate", main = "Truthfulness rating of news that sparked Debate")
+
+```
+
+From this graph we see that we increase of truthfulness in a news report, we have more sparked debates. 
+
+To confirm our conclusion, we can look at the residuals of the Chi-squared test. They show the relative measure of how much the observed counts differ from the expected count. 
+
+```{r, echo=FALSE}
+
+Chi.2Debate <- chisq.test(ChiDebate)
+
+pander(Chi.2Debate$residuals)
+
+```
+
+
+```{r, echo=FALSE}
+
+
+
+
+# mutate(INCIDENT_YEAR = as.factor(INCIDENT_YEAR),
+         #PHASE_OF_FLT = fct_relevel(PHASE_OF_FLT, c("Local", "Taxi", "Take-off", "Departure","Climb", "Descent", "Approach", "Landing","Arrival", "Unknown", "NA")))
+
+barplot(Chi.2Debate$residuals, beside = TRUE, legend.text = TRUE, args.legend = list(x= "bottomleft" ,bty = "n"), xlab= "Truthfulness Rating", ylab ="Sparked Debate", main = "Residuals of the Truthfulness in news that sparked Debate")
+
+```
+
+From this we confirm our findings in the first graph, that more debates occurred as more truthful media was made available. We also see something else of note; whenever the news is mostly false or a mixture of true and false news, the number of times of it *not* sparking a debate outnumbers when people did debate on the subject. 
+
+Now, 
+
+
+
+# Logistic Regression.
+
+X values being reaction count, comment count
+
+Reaction count & Comment Count & Share count- Multiple same values

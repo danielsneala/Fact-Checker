@@ -1,0 +1,58 @@
+---
+title: "Testing Voting Machines"
+author: "Neal Daniels"
+date: "January 7, 2021"
+output:
+  pdf_document: default
+  html_document: null
+  keep_md: yes
+  code_folding: hide
+  theme: cerulean
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+
+library(sandwich)
+library(lmtest)
+
+Data <- read_csv("~/Facebook Fact Checker/DvDData-4.csv")
+
+LinearTest_1 <- lm(Difference ~ RuralUrbanContinuumCode2013 + ManufacturingDependent2000 +	HiAmenity +	HiCreativeClass2000 +	Low_Education_2015_update +	PopChangeRate1019 +	Net_International_Migration_Rate_2010_2019 + Dominion, data = Data)
+
+summary(LinearTest_1)
+
+par(mfrow= c(1,3))
+
+# Normality of residuals showed in Normal Q-Q Plot. 
+
+# Residuals vs fitted plot, if red line flat, linearity confirmed. Vertical variation to be constant to confirm variance of errors. 
+plot(LinearTest_1, which =1:2)
+
+
+# Residuals vs Order, if trend present, error terms are not correlated.
+plot(LinearTest_1$residuals, pch = 20, main = "Residuals vs Order")
+
+#Checks out.
+# table(LinearData$Difference, LinearData$RuralUrbanContinuumCode2013)
+
+
+```
+
+
+# Chi Square test.
+
+First test: Dominion and TotalVotes
+
+text{}
+
+```{r message=FALSE, warning=FALSE}
+
+# Chi Square test. 
+
+# Dominion and  Totalvotes
+
+table(Data$TotalVotes, Data$Dominion)
+
+
+```
